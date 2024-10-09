@@ -102,16 +102,26 @@ object Natives {
     external fun nativeThreadSu(superKey: String, uid: Int, scontext: String?): Long
 
     private external fun nativeGrantSu(
-        superKey: String, uid: Int, toUid: Int, scontext: String?, exclude: Boolean
+        superKey: String, uid: Int, toUid: Int, scontext: String?
     ): Long
 
-    fun grantSu(uid: Int, toUid: Int, scontext: String?, exclude: Boolean): Long {
-        return nativeGrantSu(APApplication.superKey, uid, toUid, scontext, false)
+    fun grantSu(uid: Int, toUid: Int, scontext: String?): Long {
+        return nativeGrantSu(APApplication.superKey, uid, toUid, scontext)
     }
 
     private external fun nativeRevokeSu(superKey: String, uid: Int): Long
     fun revokeSu(uid: Int): Long {
         return nativeRevokeSu(APApplication.superKey, uid)
+    }
+
+    private external fun nativeSetUidExclude(superKey: String, uid: Int, exclude: Int): Int
+    fun setUidExclude(uid: Int, exclude: Int): Int {
+        return nativeSetUidExclude(APApplication.superKey, uid, exclude)
+    }
+
+    private external fun nativeGetUidExclude(superKey: String, uid: Int): Int
+    fun isUidExclude(uid: Int): Int {
+        return nativeGetUidExclude(APApplication.superKey, uid)
     }
 
     private external fun nativeSuProfile(superKey: String, uid: Int): Profile

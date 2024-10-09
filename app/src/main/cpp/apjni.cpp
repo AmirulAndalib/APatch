@@ -8,6 +8,7 @@
 #include <jni.h>
 #include <android/log.h>
 #include <cstring>
+#include <vector>
 
 #include "apjni.hpp"
 #include "supercall.h"
@@ -95,6 +96,30 @@ extern "C" {
         return rc;
     }
 
+    JNIEXPORT jint JNICALL Java_me_bmax_apatch_Natives_nativeSetUidExclude(JNIEnv *env, jobject /* this */, jstring superKey, jint uid, jint exclude)
+    {
+        if (!superKey) [[unlikely]] {
+            LOGE("Super Key is null!");
+            return -EINVAL;
+        }
+        const char *skey = env->GetStringUTFChars(superKey, nullptr);
+        long rc = sc_set_ap_mod_exclude(skey, (uid_t) uid, exclude);
+        env->ReleaseStringUTFChars(superKey, skey);
+        return rc;
+    }
+
+    JNIEXPORT jint JNICALL Java_me_bmax_apatch_Natives_nativeGetUidExclude(JNIEnv *env, jobject /* this */, jstring superKey, uid_t uid)
+    {
+        if (!superKey) [[unlikely]] {
+            LOGE("Super Key is null!");
+            return -EINVAL;
+        }
+        const char *skey = env->GetStringUTFChars(superKey, nullptr);
+        long rc = sc_get_ap_mod_exclude(skey, uid);
+        env->ReleaseStringUTFChars(superKey, skey);
+        return rc;
+    }
+
     JNIEXPORT jintArray JNICALL Java_me_bmax_apatch_Natives_nativeSuUids(JNIEnv *env, jobject /* this */,
                                                                          jstring superKey)
     {
@@ -104,13 +129,16 @@ extern "C" {
         }
         const char *skey = env->GetStringUTFChars(superKey, nullptr);
         int num = sc_su_uid_nums(skey);
-        int uids[num];
-        long n = sc_su_allow_uids(skey, (uid_t *)uids, num);
+        std::vector<int> uids(num);
+
+        long n = sc_su_allow_uids(skey, (uid_t *)uids.data(), num);
         if (n > 0) [[unlikely]] {
-            jintArray array = env->NewIntArray(num);
-            env->SetIntArrayRegion(array, 0, n, uids);
+            jintArray array = env->NewIntArray(n);
+            env->SetIntArrayRegion(array, 0, n, uids.data());
+            env->ReleaseStringUTFChars(superKey, skey);
             return array;
         }
+
         env->ReleaseStringUTFChars(superKey, skey);
         return env->NewIntArray(0);
     }
@@ -276,7 +304,7 @@ extern "C" {
     }
 
     JNIEXPORT jlong JNICALL Java_me_bmax_apatch_Natives_nativeGrantSu(JNIEnv *env, jobject /* this */, jstring superKey,
-                                                                      jint uid, jint to_uid, jstring scontext, jboolean exclude)
+                                                                      jint uid, jint to_uid, jstring scontext)
     {
         if (!superKey) [[unlikely]] {
             LOGE("Super Key is null!");
@@ -287,7 +315,6 @@ extern "C" {
         struct su_profile profile = { 0 };
         profile.uid = uid;
         profile.to_uid = to_uid;
-        profile.ext.exclude = exclude;
         if (sctx) strncpy(profile.scontext, sctx, sizeof(profile.scontext) - 1);
         long rc = sc_su_grant_uid(skey, &profile);
         env->ReleaseStringUTFChars(superKey, skey);

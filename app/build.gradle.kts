@@ -1,6 +1,7 @@
 @file:Suppress("UnstableApiUsage")
 
 import com.android.build.gradle.internal.api.BaseVariantOutputImpl
+import com.android.build.gradle.tasks.PackageAndroidArtifact
 import org.jetbrains.kotlin.compose.compiler.gradle.ComposeFeatureFlag
 import java.net.URI
 
@@ -53,6 +54,11 @@ android {
 
     dependenciesInfo.includeInApk = false
 
+    // https://stackoverflow.com/a/77745844
+    tasks.withType<PackageAndroidArtifact> {
+        doFirst { appMetadata.asFile.orNull?.writeText("") }
+    }
+
     buildFeatures {
         aidl = true
         buildConfig = true
@@ -76,9 +82,7 @@ android {
 
     composeCompiler {
         featureFlags = setOf(
-            ComposeFeatureFlag.IntrinsicRemember,
-            ComposeFeatureFlag.OptimizeNonSkippingGroups,
-            ComposeFeatureFlag.StrongSkipping.disabled()
+            ComposeFeatureFlag.OptimizeNonSkippingGroups
         )
     }
 
